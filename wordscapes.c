@@ -29,7 +29,8 @@
 #define DICT "/usr/share/dict/cracklib-small"
 
 typedef struct tree {
-	struct tree *p[27];
+	struct tree *p[26]; // a-z
+	int last;
 } Tree;
 
 void add(Tree *root, char *word);
@@ -48,49 +49,42 @@ Tree *dict, *found;
 
 void add(Tree *root, char *word)
 {
-	//fprintf(stderr,"Attempting to add \"%s\" to found\n", word);
-
-	char *p;
+	char *p = word;
+	Tree *t = root;
 	int index;
-	for(p = word; *p != '\0'; p++) {
-		//fprintf(stderr,"in for, *p=%c\n", *p);
-		index = *p - 'a';
-		//fprintf(stderr,"in for, index=%d\n", index);
+
+	for( ; *p != '\0'; p++, t = t->p[index]) {
+		index = *p-'a';
 		if(index < 0 || index > 25)
 			return; // unsupported character
-		if(root->p[index] == NULL) {
-			//fprintf(stderr,"adding leaf to found for character %c, index is %d...", *p, index);
-			root->p[index] = new_Tree();
-			//fprintf(stderr,"done\n");
-		} else {
-			//fprintf(stderr,"not adding because it's not null\n");
-		}
-		root = root->p[index];
+		if(t->p[index] == NULL)
+			t->p[index] = new_Tree();
 	}
-
-	if(*p == '\0')
-		root->p[26] = new_Tree();
+	t->last = YES;
 }
 
 int is_in_tree(Tree *root, char *word)
 {
 	int index;
-	for(int i = 0; i < strlen(word) + 1; i++, root = root->p[index]) {
-		index = word[i]=='\0'? 26 : word[i]-'a';
-		if(root->p[index] == NULL)
+	char *p = word;
+	Tree *t = root;
+	for( ; *p != '\0'; p++, t = t->p[index]) {
+		index = *p - 'a';
+		if(t->p[index] == NULL)
 			return NO;
 	}
-	return YES;
+	return t->last == YES ? YES : NO;
 }
 
 Tree *new_Tree()
 {
 	Tree *ret = malloc(sizeof(Tree));
+
 	if(ret == NULL)
 		die("Couldn't allocate new_Tree");
 
-	for(int i = 0; i < 27; i++)
-		ret->p[i]=NULL;
+	memset(ret,0,sizeof(*ret));
+	// ret->last=NO;
 
 	return ret;
 }
@@ -178,7 +172,7 @@ void parse_dict()
 int main(int argc, char *argv[])
 {
 	argv0=*argv;
-	if(argc < 2 || argc > 3) {
+	if(argc != 2 && argc != 3) {
 		usage();
 		return 1;
 	}
