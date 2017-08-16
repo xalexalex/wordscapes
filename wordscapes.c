@@ -37,27 +37,39 @@ int is_in_tree(Tree *root, char *word);
 Tree *new_Tree();
 void usage();
 void die(char *e);
-int word_in_file(char *word, FILE *file);
 void check(char *str);
 void perm(char *pre, char *str);
 void parse_dict();
 
 char *argv0;
 char *template = NULL;
-Tree *dict;
-FILE *found;
+Tree *dict, *found;
 //FIXME both files can be substituted with data structures that make search faster. The first one is read once, while the second one is never created.
 
 void add(Tree *root, char *word)
 {
+	//fprintf(stderr,"Attempting to add \"%s\" to found\n", word);
+
+	char *p;
 	int index;
-	for(int i = 0; i < strlen(word) + 1; i++, root = root->p[index]) {
-		index = word[i]=='\0'? 26 : word[i]-'a';
-		if(index < 0 || index > 26)
+	for(p = word; *p != '\0'; p++) {
+		//fprintf(stderr,"in for, *p=%c\n", *p);
+		index = *p - 'a';
+		//fprintf(stderr,"in for, index=%d\n", index);
+		if(index < 0 || index > 25)
 			return; // unsupported character
-		if(root->p[index] == NULL)
+		if(root->p[index] == NULL) {
+			//fprintf(stderr,"adding leaf to found for character %c, index is %d...", *p, index);
 			root->p[index] = new_Tree();
+			//fprintf(stderr,"done\n");
+		} else {
+			//fprintf(stderr,"not adding because it's not null\n");
+		}
+		root = root->p[index];
 	}
+
+	if(*p == '\0')
+		root->p[26] = new_Tree();
 }
 
 int is_in_tree(Tree *root, char *word)
@@ -76,6 +88,10 @@ Tree *new_Tree()
 	Tree *ret = malloc(sizeof(Tree));
 	if(ret == NULL)
 		die("Couldn't allocate new_Tree");
+
+	for(int i = 0; i < 27; i++)
+		ret->p[i]=NULL;
+
 	return ret;
 }
 
@@ -96,29 +112,11 @@ void die(char *e)
 	exit(1);
 }
 
-int word_in_file(char *word, FILE *file)
-{
-	rewind(file);
-	char buf[MAX_WORD_LEN+1];
-
-	while(fgets(buf, sizeof(buf), file))
-	{
-		if(buf[strlen(buf)-1]=='\n')
-			buf[strlen(buf)-1]='\0';
-		if(strcmp(buf,word)==0) {
-			return YES;
-		}
-	}
-	return NO;
-}
-
 void check(char *str)
 {
-	if(is_in_tree(dict,str)==YES && word_in_file(str,found)==NO) {
+	if(is_in_tree(dict,str)==YES && is_in_tree(found,str)==NO) {
 		puts(str);
-		fseek(found,0,SEEK_END);
-		fputs(str,found);
-		fputc('\n',found);
+		add(found,str);
 	}
 }
 
@@ -189,14 +187,12 @@ int main(int argc, char *argv[])
 
 	parse_dict();
 
+	found = new_Tree();
+
 	char *pre = malloc(sizeof(char) * (strlen(argv[1])+1));
 	if(!pre)
 		die("Couldn't allocate pre");
 	memset(pre,0,sizeof(pre));
-
-	found = fopen("/tmp/found","w+");
-	if(!found)
-		die("Couldn't open file found");
 
 	perm(pre, argv[1]);
 
