@@ -10,7 +10,14 @@
  * 8 letters: 7m 55s
  * 9 letters: ~ 1h 4m
  * 10 letters: ~ 8h 32m
+ *
+ * v2.0 with the Tree structure
+ * 9 letters: 0.195s
+ * 10 letters: 1.56s
+ * 11 letters: 17.37s
  */
+
+// TODO: alert if input or template > MAX_WORD_LEN
 
 #include <stdio.h>
 #include <string.h>
@@ -18,14 +25,59 @@
 
 #define YES 1
 #define NO  0
-#define MAX_WORD_LEN 35
+#define MAX_WORD_LEN 35 /*this could safely be 10, IFF you ensure you discard words >10 chars properly */
 #define DICT "/usr/share/dict/cracklib-small"
+
+typedef struct tree {
+	struct tree *p[27];
+} Tree;
+
+void add(Tree *root, char *word);
+int is_in_tree(Tree *root, char *word);
+Tree *new_Tree();
+void usage();
+void die(char *e);
+int word_in_file(char *word, FILE *file);
+void check(char *str);
+void perm(char *pre, char *str);
+void parse_dict();
 
 char *argv0;
 char *template = NULL;
-FILE *dict;
+Tree *dict;
 FILE *found;
 //FIXME both files can be substituted with data structures that make search faster. The first one is read once, while the second one is never created.
+
+void add(Tree *root, char *word)
+{
+	int index;
+	for(int i = 0; i < strlen(word) + 1; i++, root = root->p[index]) {
+		index = word[i]=='\0'? 26 : word[i]-'a';
+		if(index < 0 || index > 26)
+			return; // unsupported character
+		if(root->p[index] == NULL)
+			root->p[index] = new_Tree();
+	}
+}
+
+int is_in_tree(Tree *root, char *word)
+{
+	int index;
+	for(int i = 0; i < strlen(word) + 1; i++, root = root->p[index]) {
+		index = word[i]=='\0'? 26 : word[i]-'a';
+		if(root->p[index] == NULL)
+			return NO;
+	}
+	return YES;
+}
+
+Tree *new_Tree()
+{
+	Tree *ret = malloc(sizeof(Tree));
+	if(ret == NULL)
+		die("Couldn't allocate new_Tree");
+	return ret;
+}
 
 void usage()
 {
@@ -38,10 +90,17 @@ void usage()
 			"nip\n", argv0, argv0, argv0);
 }
 
+void die(char *e)
+{
+	fputs(e, stderr);
+	exit(1);
+}
+
 int word_in_file(char *word, FILE *file)
 {
 	rewind(file);
-	char buf[MAX_WORD_LEN];
+	char buf[MAX_WORD_LEN+1];
+
 	while(fgets(buf, sizeof(buf), file))
 	{
 		if(buf[strlen(buf)-1]=='\n')
@@ -55,7 +114,7 @@ int word_in_file(char *word, FILE *file)
 
 void check(char *str)
 {
-	if(word_in_file(str,dict)==YES && word_in_file(str,found)==NO) {
+	if(is_in_tree(dict,str)==YES && word_in_file(str,found)==NO) {
 		puts(str);
 		fseek(found,0,SEEK_END);
 		fputs(str,found);
@@ -96,6 +155,28 @@ void perm(char *pre, char *str)
 	}
 }
 
+void parse_dict()
+{
+	FILE *dictfile;
+	dict = new_Tree();
+
+	dictfile = fopen(DICT, "r");
+	if(!dictfile)
+		die("Couldn't open "DICT);
+
+	// FIXME can read char-by-char and add to dict directly
+	char buf[MAX_WORD_LEN];
+	while(fgets(buf, sizeof(buf), dictfile))
+	{
+		if(buf[strlen(buf)-1]=='\n')
+			buf[strlen(buf)-1]='\0';
+
+		add(dict, buf);
+	}
+
+	fclose(dictfile);
+}
+
 int main(int argc, char *argv[])
 {
 	argv0=*argv;
@@ -106,13 +187,16 @@ int main(int argc, char *argv[])
 	if(argc==3)
 		template = argv[2];
 
-	char *pre = malloc(sizeof(char) * (strlen(argv[1])+1));
-	if(!pre) return 1;
+	parse_dict();
 
-	dict = fopen(DICT, "r");
-	if(!dict) return 1;
+	char *pre = malloc(sizeof(char) * (strlen(argv[1])+1));
+	if(!pre)
+		die("Couldn't allocate pre");
+	memset(pre,0,sizeof(pre));
+
 	found = fopen("/tmp/found","w+");
-	if(!found) return 1;
+	if(!found)
+		die("Couldn't open file found");
 
 	perm(pre, argv[1]);
 
