@@ -3,21 +3,16 @@
  * Optionally, when a template such as h_llo or ___y is given, only words matching it are printed.
  */
 
-/* benchmarks
- * 5 letters: 1.2s
- * 6 letters: 8.2s
- * 7 letters: 58s
- * 8 letters: 7m 55s
- * 9 letters: ~ 1h 4m
- * 10 letters: ~ 8h 32m
- *
- * v2.0 with the Tree structure
- * 9 letters: 0.195s
- * 10 letters: 1.56s
- * 11 letters: 17.37s
+/* benchmark
+ * letters	b94908b		239bba2		-O2
+ * 5		1.2s		
+ * 6		8.2s		
+ * 7		58s		
+ * 8		7m 55s		
+ * 9		~ 1h 4m		0.195s
+ * 10		~ 8h 32m	1.56s		0.7s
+ * 11		~ 68h 16m	17.4s		7.6s
  */
-
-// TODO: alert if input or template > MAX_WORD_LEN
 
 #include <stdio.h>
 #include <string.h>
@@ -26,6 +21,7 @@
 #define YES 1
 #define NO  0
 #define MAX_WORD_LEN 35 /*this could safely be 10, IFF you ensure you discard words >10 chars properly */
+// TODO: alert if input or template > MAX_WORD_LEN
 #define DICT "/usr/share/dict/cracklib-small"
 
 typedef struct tree {
@@ -45,7 +41,6 @@ void parse_dict();
 char *argv0;
 char *template = NULL;
 Tree *dict, *found;
-//FIXME both files can be substituted with data structures that make search faster. The first one is read once, while the second one is never created.
 
 void add(Tree *root, char *word)
 {
@@ -183,10 +178,9 @@ int main(int argc, char *argv[])
 
 	found = new_Tree();
 
-	char *pre = malloc(sizeof(char) * (strlen(argv[1])+1));
+	char *pre = calloc(strlen(argv[1])+1, sizeof(char));
 	if(!pre)
 		die("Couldn't allocate pre");
-	memset(pre,0,sizeof(pre));
 
 	perm(pre, argv[1]);
 
