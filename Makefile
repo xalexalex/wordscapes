@@ -8,3 +8,6 @@ wordscapes: wordscapes.c
 install: wordscapes
 	mkdir -p $(DESTDIR)
 	cp wordscapes $(DESTDIR)/wordscapes
+
+clean:
+	rm wordscapes
