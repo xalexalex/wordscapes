@@ -1,8 +1,3 @@
-/*
- * This small program finds all anagrams of a set of letters that are real words.
- * Optionally, when a template such as h_llo or ___y is given, only words matching it are printed.
- */
-
 /* benchmark
  * letters	b94908b		239bba2		-O2
  * 5		1.2s		
