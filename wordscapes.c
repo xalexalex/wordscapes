@@ -1,12 +1,12 @@
 /* benchmark
- * letters	b94908b		239bba2		-O2
- * 5		1.2s		
- * 6		8.2s		
- * 7		58s		
- * 8		7m 55s		
- * 9		~ 1h 4m		0.195s
- * 10		~ 8h 32m	1.56s		0.7s
- * 11		~ 68h 16m	17.4s		7.6s
+ * letters   b94908b      239bba2    -O2
+ * 5         1.2s
+ * 6         8.2s
+ * 7         58s
+ * 8         7m 55s
+ * 9         ~ 1h 4m      0.195s
+ * 10        ~ 8h 32m     1.56s      0.7s
+ * 11        ~ 68h 16m    17.4s      7.6s
  */
 
 #include <stdio.h>
